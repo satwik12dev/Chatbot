@@ -1,0 +1,53 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: ava-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword123
+      MYSQL_DATABASE: ava_db
+      MYSQL_USER: ava_user
+      MYSQL_PASSWORD: ava_pass123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "ava_user", "-pava_pass123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ava-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ava-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:mysql://mysql:3306/ava_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DATABASE_USERNAME: ava_user
+      DATABASE_PASSWORD: ava_pass123
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-3.6-flash}
+      GEMINI_STT_MODEL: ${GEMINI_STT_MODEL:-gemini-3.6-flash}
+      GEMINI_TTS_MODEL: ${GEMINI_TTS_MODEL:-gemini-3.6-flash}
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      BREVO_SMTP_HOST: ${BREVO_SMTP_HOST:-smtp-relay.brevo.com}
+      BREVO_SMTP_PORT: ${BREVO_SMTP_PORT:-587}
+      BREVO_SMTP_USERNAME: ${BREVO_SMTP_USERNAME:-}
+      BREVO_SMTP_PASSWORD: ${BREVO_SMTP_PASSWORD:-}
+      BREVO_FROM_EMAIL: ${BREVO_FROM_EMAIL:-no-reply@ava.ai}
+      BREVO_FROM_NAME: ${BREVO_FROM_NAME:-AVA AI Assistant}
+
+volumes:
+  mysql_data:
+    driver: local

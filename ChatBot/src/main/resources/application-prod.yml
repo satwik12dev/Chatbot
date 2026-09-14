@@ -1,0 +1,11 @@
+spring:
+  jpa:
+    show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+
+logging:
+  level:
+    root: INFO
+    com.ava: INFO
